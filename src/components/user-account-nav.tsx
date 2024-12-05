@@ -55,7 +55,7 @@ export function UserAccountNav({ user }: UserAccountNavProps) {
           </DropdownMenuItem>
 
           <DropdownMenuItem asChild>
-            <Link href="/r/create">
+            <Link href="/b/create">
               <Icons.users className="mr-2 h-4 w-4" />
               <span>Create Community</span>
             </Link>

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const PostValidator = z.object({
   content: z.any(),
-  subredditId: z.string(),
+  bowlId: z.string(),
   title: z
     .string()
     .min(3, {

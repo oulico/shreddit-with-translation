@@ -11,7 +11,7 @@ export async function GeneralFeed() {
       votes: true,
       author: true,
       comments: true,
-      subreddit: true,
+      bowl: true,
     },
     take: INFINITE_SCROLL_PAGINATION_RESULTS, // 4 to demonstrate infinite scroll, should be higher in production
   });

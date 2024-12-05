@@ -38,7 +38,7 @@ export function PostVoteClient({
     mutationFn: async (voteType: VoteType) => {
       const payload: PostVoteRequest = { postId, voteType };
 
-      await axios.patch("/api/subreddit/post/vote", payload);
+      await axios.patch("/api/bowl/post/vote", payload);
     },
 
     onError: (err, voteType) => {

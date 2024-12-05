@@ -1,54 +1,54 @@
-import { type NextRequest } from "next/server";
-import { z } from "zod";
+import {type NextRequest} from "next/server";
+import {z} from "zod";
 
-import { SubredditSubscriptionValidator } from "~/lib/validators/subreddit";
-import { getServerAuthSession } from "~/server/auth";
-import { prisma } from "~/server/db";
+import {BowlSubscriptionValidator} from "~/lib/validators/bowl";
+import {getServerAuthSession} from "~/server/auth";
+import {prisma} from "~/server/db";
 
 export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerAuthSession();
+    try {
+        const session = await getServerAuthSession();
 
-    // Check if user is signed in
-    if (!session?.user) {
-      return new Response("Unauthorized", { status: 401 });
+        // Check if user is signed in
+        if (!session?.user) {
+            return new Response("Unauthorized", {status: 401});
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const body = await req.json();
+        const {bowlId} = BowlSubscriptionValidator.parse(body);
+
+        // Check if user is already subscribed to bowl
+        const subscriptionExists = await prisma.subscription.findFirst({
+            where: {
+                bowlId,
+                userId: session.user.id,
+            },
+        });
+
+        if (subscriptionExists) {
+            return new Response("You've already subscribed to this bowl", {
+                status: 400,
+            });
+        }
+
+        // Else, create subscription and associate it with the user
+        await prisma.subscription.create({
+            data: {
+                bowlId,
+                userId: session.user.id,
+            },
+        });
+
+        return new Response(bowlId);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return new Response(error.message, {status: 400});
+        }
+
+        return new Response(
+            "Could not subscribe to bowl at this time. Please try again later",
+            {status: 500},
+        );
     }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const body = await req.json();
-    const { subredditId } = SubredditSubscriptionValidator.parse(body);
-
-    // Check if user is already subscribed to subreddit
-    const subscriptionExists = await prisma.subscription.findFirst({
-      where: {
-        subredditId,
-        userId: session.user.id,
-      },
-    });
-
-    if (subscriptionExists) {
-      return new Response("You've already subscribed to this subreddit", {
-        status: 400,
-      });
-    }
-
-    // Else, create subscription and associate it with the user
-    await prisma.subscription.create({
-      data: {
-        subredditId,
-        userId: session.user.id,
-      },
-    });
-
-    return new Response(subredditId);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return new Response(error.message, { status: 400 });
-    }
-
-    return new Response(
-      "Could not subscribe to subreddit at this time. Please try again later",
-      { status: 500 },
-    );
-  }
 }

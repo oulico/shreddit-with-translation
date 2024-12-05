@@ -1,4 +1,4 @@
-# Shreddit
+# Bibim
 
 > Modern fullstack Reddit clone, built with Next.js & Tailwind and deployed on Vercel.
 
@@ -56,7 +56,7 @@ To run it locally, follow the steps below:
 
    ```bash
    # Clone repository
-   git clone git@github.com:peterkibuchi/shreddit.git
+   git clone git@github.com:peterkibuchi/Bibim.git
 
    # Install dependencies
    pnpm i

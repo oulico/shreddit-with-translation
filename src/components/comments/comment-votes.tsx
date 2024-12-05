@@ -41,7 +41,7 @@ export function CommentVotes({
         commentId,
       };
 
-      await axios.patch("/api/subreddit/post/comment/vote", payload);
+      await axios.patch("/api/bowl/post/comment/vote", payload);
     },
 
     onError: (err, voteType) => {

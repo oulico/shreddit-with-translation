@@ -52,7 +52,7 @@ export function PostComment({
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const { data } = await axios.patch(
-        "/api/subreddit/post/comment",
+        "/api/bowl/post/comment",
         payload,
       );
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return

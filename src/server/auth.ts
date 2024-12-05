@@ -1,14 +1,15 @@
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { nanoid } from "nanoid";
+import {PrismaAdapter} from "@next-auth/prisma-adapter";
+import {nanoid} from "nanoid";
 import {
-  getServerSession,
-  type DefaultSession,
-  type NextAuthOptions,
+    getServerSession,
+    type DefaultSession,
+    type NextAuthOptions,
 } from "next-auth";
-import GitHubProvider from "next-auth/providers/github";
+import GoogleProvider from "next-auth/providers/google";
 
-import { env } from "~/env";
-import { prisma } from "~/server/db";
+import {env} from "~/env";
+import {prisma} from "~/server/db";
+import {UserRole} from "~/constants/ROLES";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -17,26 +18,26 @@ import { prisma } from "~/server/db";
  * @see https://next-auth.js.org/getting-started/typescript#module-augmentation
  */
 declare module "next-auth" {
-  interface Session extends DefaultSession {
-    user: {
-      id: string;
-      username: string | null;
-      // ...other properties
-      // role: UserRole;
-    } & DefaultSession["user"];
-  }
+    interface Session extends DefaultSession {
+        user: {
+            id: string;
+            username: string | null;
+            // ...other properties
+            role: UserRole;
+        } & DefaultSession["user"];
+    }
 
-  // interface User {
-  //   // ...other properties
-  //   // role: UserRole;
-  // }
+    interface User {
+        // ...other properties
+        role: UserRole;
+    }
 }
 
 declare module "next-auth/jwt" {
-  interface JWT {
-    id: string;
-    username: string | null;
-  }
+    interface JWT {
+        id: string;
+        username: string | null;
+    }
 }
 
 /**
@@ -45,67 +46,73 @@ declare module "next-auth/jwt" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
-  callbacks: {
-    session: ({ session, token }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: token.id,
-        name: token.name,
-        email: token.email,
-        image: token.picture,
-        username: token.username,
-      },
-    }),
+    adapter: PrismaAdapter(prisma),
+    callbacks: {
+        session: ({session, token}) => ({
+            ...session,
+            user: {
+                ...session.user,
+                id: token.id,
+                name: token.name,
+                email: token.email,
+                image: token.picture,
+                username: token.username,
+            },
+        }),
 
-    async jwt({ token, user }) {
-      const dbUser = await prisma.user.findFirst({
-        where: {
-          email: token.email,
+        async jwt({token, user}) {
+            const dbUser = await prisma.user.findFirst({
+                where: {
+                    email: token.email,
+                },
+            });
+
+            if (!dbUser) {
+                token.id = user.id;
+                return token;
+            }
+
+            if (!dbUser.username) {
+                await prisma.user.update({
+                    where: {
+                        id: dbUser.id,
+                    },
+                    data: {
+                        username: nanoid(10),
+                    },
+                });
+            }
+
+            return {
+                id: dbUser.id,
+                name: dbUser.name,
+                email: dbUser.email,
+                picture: dbUser.image,
+                username: dbUser.username,
+            };
         },
-      });
-
-      if (!dbUser) {
-        token.id = user.id;
-        return token;
-      }
-
-      if (!dbUser.username) {
-        await prisma.user.update({
-          where: {
-            id: dbUser.id,
-          },
-          data: {
-            username: nanoid(10),
-          },
-        });
-      }
-
-      return {
-        id: dbUser.id,
-        name: dbUser.name,
-        email: dbUser.email,
-        picture: dbUser.image,
-        username: dbUser.username,
-      };
+        redirect() {
+            return "/";
+        },
     },
-    redirect() {
-      return "/";
+    pages: {
+        signIn: "/login",
     },
-  },
-  pages: {
-    signIn: "/login",
-  },
-  providers: [
-    GitHubProvider({
-      clientId: env.GITHUB_CLIENT_ID,
-      clientSecret: env.GITHUB_CLIENT_SECRET,
-    }),
-  ],
-  session: {
-    strategy: "jwt",
-  },
+    providers: [
+        // GitHubProvider({
+        //   clientId: env.GITHUB_CLIENT_ID,
+        //   clientSecret: env.GITHUB_CLIENT_SECRET,
+        // }),
+        GoogleProvider({
+                clientId: env.GOOGLE_CLIENT_ID,
+                clientSecret: env.GOOGLE_CLIENT_SECRET,
+
+            }
+        ),
+    ],
+    session: {
+        strategy: "jwt",
+    },
 };
 
 /**
@@ -121,5 +128,5 @@ export const authOptions: NextAuthOptions = {
 // };
 
 export const getServerAuthSession = () => {
-  return getServerSession(authOptions);
+    return getServerSession(authOptions);
 };
